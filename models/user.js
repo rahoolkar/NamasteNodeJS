@@ -29,11 +29,6 @@ const userSchema = new Schema({
         unique : true,
         lowercase : true,
         trim : true,
-        validate : (value)=>{
-            if(validator.isEmail(value)==false){
-                throw new Error ("Invalid Email Address : ",value);
-            }
-        }
     },
     password : {
         type : String,
