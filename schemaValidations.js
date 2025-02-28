@@ -18,6 +18,7 @@ async function main() {
 };
 
 app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 
 //mainly i have to use validations for the post and patch methods
 app.post("/user",async(req,res)=>{
@@ -35,9 +36,21 @@ app.get("/",(req,res)=>{
     res.send("welcome to the schema validations");
 })
 
-app.patch("/user",async(req,res)=>{
-    let {id} = req.body;
-    let data = req.body;
-    await User.findByIdAndUpdate(id,data);
-    res.send("User updated sucessfully");
+app.patch("/user/:id",async(req,res)=>{
+    try{
+        let {id} = req.params;
+        let data = req.body;
+        //i want that nobody should be allowed to update the email and firstname
+        let allowed_feilds = ["lastname","age","password"];
+        let isupdate = Object.keys(data).every((elem)=>{
+            return allowed_feilds.includes(elem);
+        })
+        if(isupdate==false){
+            throw new Error("Update cannot be possible");
+        }
+        await User.findByIdAndUpdate(id,data,{runValidators : true});
+        res.send("User updated sucessfully");
+    }catch(error){
+        res.status(404).send(error.message);
+    }
 })

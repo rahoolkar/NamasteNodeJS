@@ -14,6 +14,7 @@ const userSchema = new Schema({
     },
     age:{
         type : Number,
+        max : 80,
         default : 18,
         validate : (value)=>{
             if(value<18){
