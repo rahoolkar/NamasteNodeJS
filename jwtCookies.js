@@ -1,8 +1,10 @@
 const express = require("express");
 const app = express();
+const mongoose = require("mongoose");
 const User = require("./models/user");
-const validator = require('validator');
-const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+var validator = require('validator');
+var jwt = require('jsonwebtoken');
 
 main().then(()=>{
     //first connect to the db and then listen
@@ -18,32 +20,31 @@ async function main() {
     await mongoose.connect('mongodb://127.0.0.1:27017/namastenode');
 };
 
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
+
+
 app.post("/login",async(req,res)=>{
-    try{
-        //authenticate the user
-        let {email,password} = req.body;
-        let isEmail = await validator.isEmail(email);
-        if(isEmail==false){
-            throw new Error("credentials wrong!! please check again")
-        }
-        let user = User.find({email : email});
-        if(!user){
-            throw new Error("Please register again");
-        }
-        let isValid = await bcrypt.compare(password, user.password);
-        if(isValid==true){
-            //generate the jwt token
-            const token = jwt.sign({ id : user._id }, 'shhhhh');
-            res.cookie(token);
-            //sent the token to the user browser
-        }else{
-            throw new Error("credentials wrong!! please check again")
-        }
-    }catch(error){
-        res.status(404).send(error);
+    let {email,password} = req.body;
+    let isValidated = validator.isEmail(email);
+    if(isValidated==false){
+        throw new Error("Please enter proper email");
     }
-})
 
-app.get("/profile",(req,res)=>{
+    let user = await User.findOne({email : email});
+    if(!user){
+        throw new Error("Plese register first");
+    }
 
+    let isLoggined = await bcrypt.compare(password, user.password);
+    if(isLoggined==true){
+        //generate the jwt token
+        const token = jwt.sign({ id : user._id }, 'shhhhh');
+        console.log(token);
+        //send the jwt token to the browser as cookie
+        res.cookie("token",token);
+        res.send("user loggin successfully");
+    }else{
+        throw new Error("Password doesnot match");
+    }
 })
