@@ -3,6 +3,7 @@ const app = express();
 const mongoose = require("mongoose");
 const User = require("./models/user.js")
 
+
 main().then(()=>{
     //first connect to the db and then listen
     console.log("db connected successfully")
