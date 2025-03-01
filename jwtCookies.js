@@ -5,6 +5,7 @@ const User = require("./models/user");
 const bcrypt = require('bcrypt');
 var validator = require('validator');
 var jwt = require('jsonwebtoken');
+var cookieParser = require('cookie-parser')
 
 main().then(()=>{
     //first connect to the db and then listen
@@ -22,7 +23,7 @@ async function main() {
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
-
+app.use(cookieParser())
 
 app.post("/login",async(req,res)=>{
     let {email,password} = req.body;
@@ -46,5 +47,23 @@ app.post("/login",async(req,res)=>{
         res.send("user loggin successfully");
     }else{
         throw new Error("Password doesnot match");
+    }
+})
+
+app.get("/profile",async(req,res)=>{
+    try{
+        let {token} = req.cookies;
+        if(!token){
+            throw new Error("Token not found");
+        }
+        const decoded = jwt.verify(token, 'shhhhh');
+        let {id} = decoded;
+        let node = await User.findById(id);
+        if(!node){
+            throw new Error("User not found");
+        }
+        res.send(node);
+    }catch(error){
+        res.status(404).send("something went wrong");
     }
 })
