@@ -5,7 +5,8 @@ const User = require("./models/user");
 const bcrypt = require('bcrypt');
 var validator = require('validator');
 var jwt = require('jsonwebtoken');
-var cookieParser = require('cookie-parser')
+var cookieParser = require('cookie-parser');
+const isAuthenticated = require("./helpers/authMiddleware");
 
 main().then(()=>{
     //first connect to the db and then listen
@@ -23,7 +24,7 @@ async function main() {
 
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
-app.use(cookieParser())
+app.use(cookieParser());
 
 app.post("/login",async(req,res)=>{
     let {email,password} = req.body;
@@ -40,7 +41,7 @@ app.post("/login",async(req,res)=>{
     let isLoggined = await bcrypt.compare(password, user.password);
     if(isLoggined==true){
         //generate the jwt token
-        const token = jwt.sign({ id : user._id }, 'shhhhh');
+        const token = await jwt.sign({ id : user._id }, 'shhhhh');
         console.log(token);
         //send the jwt token to the browser as cookie
         res.cookie("token",token);
@@ -50,19 +51,19 @@ app.post("/login",async(req,res)=>{
     }
 })
 
-app.get("/profile",async(req,res)=>{
+app.get("/profile",isAuthenticated,async(req,res)=>{
     try{
-        let {token} = req.cookies;
-        if(!token){
-            throw new Error("Token not found");
-        }
-        const decoded = jwt.verify(token, 'shhhhh');
-        let {id} = decoded;
-        let node = await User.findById(id);
-        if(!node){
-            throw new Error("User not found");
-        }
-        res.send(node);
+        let user = req.user;
+        res.send(user);
+    }catch(error){
+        res.status(404).send("something went wrong");
+    }
+})
+
+app.get("/feed",isAuthenticated,async(req,res)=>{
+    try{
+        let allListings = await User.find();
+        res.send(allListings);
     }catch(error){
         res.status(404).send("something went wrong");
     }
