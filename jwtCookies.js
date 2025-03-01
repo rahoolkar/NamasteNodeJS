@@ -42,9 +42,8 @@ app.post("/login",async(req,res)=>{
     if(isLoggined==true){
         //generate the jwt token
         const token = await jwt.sign({ id : user._id }, 'shhhhh');
-        console.log(token);
         //send the jwt token to the browser as cookie
-        res.cookie("token",token);
+        res.cookie("token",token,{expires:Date.now()+7*24*60*60*1000,secure:true,maxAge:7*24*60*60*1000,httpOnly:true});
         res.send("user loggin successfully");
     }else{
         throw new Error("Password doesnot match");
@@ -62,6 +61,7 @@ app.get("/profile",isAuthenticated,async(req,res)=>{
 
 app.get("/feed",isAuthenticated,async(req,res)=>{
     try{
+        console.log(req.cookies);
         let allListings = await User.find();
         res.send(allListings);
     }catch(error){
