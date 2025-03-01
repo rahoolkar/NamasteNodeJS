@@ -7,6 +7,7 @@ var validator = require('validator');
 var jwt = require('jsonwebtoken');
 var cookieParser = require('cookie-parser');
 const isAuthenticated = require("./helpers/authMiddleware");
+const isPatchAllowed = require("./helpers/patchMiddleware");
 
 main().then(()=>{
     //first connect to the db and then listen
@@ -50,13 +51,25 @@ app.post("/login",async(req,res)=>{
     }
 })
 
-app.get("/profile",isAuthenticated,async(req,res)=>{
+app.post("/logout",(req,res)=>{
+    res.clearCookie('token').send("user logged out :)");
+})
+
+app.get("/profile/view",isAuthenticated,async(req,res)=>{
     try{
         let user = req.user;
         res.send(user);
     }catch(error){
         res.status(404).send("something went wrong");
     }
+})
+
+app.patch("/profile/edit",isAuthenticated,isPatchAllowed,async(req,res)=>{
+    let {_id} = req.user;
+    let data = req.body;
+    console.log(data);
+    await User.findByIdAndUpdate(_id,data);
+    res.send("patch req to profile api");
 })
 
 app.get("/feed",isAuthenticated,async(req,res)=>{
