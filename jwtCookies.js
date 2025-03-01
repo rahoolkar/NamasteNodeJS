@@ -8,6 +8,7 @@ var jwt = require('jsonwebtoken');
 var cookieParser = require('cookie-parser');
 const isAuthenticated = require("./helpers/authMiddleware");
 const isPatchAllowed = require("./helpers/patchMiddleware");
+const validateListing = require("./helpers/validateListings");
 
 main().then(()=>{
     //first connect to the db and then listen
@@ -26,6 +27,23 @@ async function main() {
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 app.use(cookieParser());
+
+app.post("/signup",validateListing,async(req,res)=>{
+    try{
+        let {firstname,lastname,age,email,password} = req.body;
+
+        let hashedPassword = await bcrypt.hash(password, 10);
+
+        let newuser = new User({firstname,lastname,age,email});
+        newuser.password = hashedPassword;
+
+        await newuser.save();
+
+        res.send("user added successfully");
+    }catch(error){
+        res.status(404).send(error.message);
+    }
+})
 
 app.post("/login",async(req,res)=>{
     let {email,password} = req.body;
@@ -70,6 +88,24 @@ app.patch("/profile/edit",isAuthenticated,isPatchAllowed,async(req,res)=>{
     console.log(data);
     await User.findByIdAndUpdate(_id,data);
     res.send("patch req to profile api");
+})
+
+app.patch("/profile/password",isAuthenticated,async(req,res)=>{
+    try{
+        let data = req.body;
+        let {oldPassword,newPassword} = data;
+        let user = req.user;
+        let isPasswordCoreect = await bcrypt.compare(oldPassword, user.password);
+        if(isPasswordCoreect==false){
+            throw new Error("Password Incorrect");
+        }
+        let newHashPassword  = await bcrypt.hash(newPassword, 10);
+        user.password = newHashPassword;
+        await user.save();
+        res.send("Password updated successfully");
+    }catch(error){
+        res.status(404).send(error);
+    }
 })
 
 app.get("/feed",isAuthenticated,async(req,res)=>{
