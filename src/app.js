@@ -22,6 +22,34 @@ app.post("/user", async (req, res) => {
     password: "rahul@123",
   });
 
+  app.get("/user", async (req, res) => {
+    const mailId = req.body.email;
+
+    try {
+      const user = await User.findOne({ email: mailId });
+      if (!user) {
+        res.status(400).send("User not found");
+      } else {
+        res.send(user);
+      }
+    } catch (error) {
+      res.status(400).send("Error occurred");
+    }
+  });
+
+  app.get("/feed", async (req, res) => {
+    try {
+      const users = await User.find({});
+      if (users.length == 0) {
+        res.status(400).send("User not found");
+      } else {
+        res.send(users);
+      }
+    } catch (error) {
+      res.status(400).send("Error occurred");
+    }
+  });
+
   try {
     await userLogined.save();
     res.send("User saved in the database");
