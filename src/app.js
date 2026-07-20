@@ -1,59 +1,59 @@
 const express = require("express");
 const app = express();
-const main = require("./config/database");
+const bcrypt = require("bcrypt");
 const User = require("./models/user");
+const jwt = require("jsonwebtoken");
 
-main()
-  .then(() => {
-    console.log("database connected successfully");
-    app.listen(3000, () => {
-      console.log("app is listening to the port 3000");
-    });
-  })
-  .catch(() => {
-    console.error("database connection cannot be established");
-  });
+app.listen(3000);
 
-app.post("/user", async (req, res) => {
-  const userLogined = new User({
-    firstName: "rahul",
-    lastName: "kar",
-    email: "rahul@gmail.com",
-    password: "rahul@123",
-  });
+app.post("/signup", (req, res) => {});
 
-  app.get("/user", async (req, res) => {
-    const mailId = req.body.email;
-
-    try {
-      const user = await User.findOne({ email: mailId });
-      if (!user) {
-        res.status(400).send("User not found");
-      } else {
-        res.send(user);
-      }
-    } catch (error) {
-      res.status(400).send("Error occurred");
-    }
-  });
-
-  app.get("/feed", async (req, res) => {
-    try {
-      const users = await User.find({});
-      if (users.length == 0) {
-        res.status(400).send("User not found");
-      } else {
-        res.send(users);
-      }
-    } catch (error) {
-      res.status(400).send("Error occurred");
-    }
-  });
-
+app.post("/login", async (req, res) => {
   try {
-    await userLogined.save();
-    res.send("User saved in the database");
+    const { emailIdFromUser: email, passwordFromUser: password } = req.body;
+
+    const userToMatch = await User.find({ email: emailIdFromUser });
+
+    const { password } = userToMatch;
+
+    const isPasswordCorrect = await bcrypt.compare(passwordFromUser, password);
+
+    if (isPasswordCorrect) {
+      //create a jwt
+      const token = await jwt.sign({ id: userToMatch._id }, "superserum");
+
+      //wrap it inside a cookie and send it to client browser
+      res.cookie("token", token);
+
+      res.send("Welcome");
+    } else {
+      throw new Error("Please provide correct credentials");
+    }
   } catch (error) {
-    res.status(400).send("Error occured while saving user to the database");
+    res.status(400).send("Error : " + error.message);
+  }
+});
+
+app.get("/profile", async (req, res) => {
+  try {
+    const { token } = req.cookies;
+
+    if (!token) {
+      throw new Error("Token doesnot exists");
+    }
+
+    const dedcoded = await jwt.verify(token, "superserum");
+
+    const { id } = dedcoded;
+
+    const userToFetchProfile = await User.findById(id);
+
+    if (!userToFetchProfile) {
+      throw new Error("User doesnot exists");
+    }
+
+    res.send(userToFetchProfile);
+  } catch (error) {
+    res.status(400).send("Error : " + error.message);
   }
 });
