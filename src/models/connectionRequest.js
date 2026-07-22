@@ -8,7 +8,7 @@ const connectionRequestSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: {
-        values: ["like", "dislike", "pending", "accepted"],
+        values: ["like", "dislike", "pending", "accepted", "dismissed"],
         message: `{VALUE} is not supported`,
       },
     },
